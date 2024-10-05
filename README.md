@@ -15,7 +15,7 @@ cdata.pl is a script that lets you quickly read and edit Tavern card data from t
 Reads the value of a field, or the entire card if no field is specified.
 
 Example: 
-````
+```
 -> perl cdata.pl card.png read name
 <- "McGuffin the Brave"
 ```
