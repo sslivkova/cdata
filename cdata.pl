@@ -37,7 +37,6 @@ sub insert_field ($$$) {
 
 sub update_field ($$$) {
     my ($defs, $field, $value) = @_;
-    # if field does not exist die
     die "Cannot update '$field': Field does not exist" unless exists($defs->{data}->{$field});
     $defs->{data}->{$field} = $value;
     print "Field '$field' updated with value '$value'\n";
@@ -47,10 +46,34 @@ sub update_field ($$$) {
 
 sub delete_field ($$) {
     my ($defs, $field) = @_;
-    # if field does not exist die
     die "Cannot delete '$field': Field does not exist" unless exists($defs->{data}->{$field});
     delete ($defs->{data}->{$field});
     print "Field '$field' deleted\n";
+    $defs;
+}
+
+sub clear ($$) {
+    my ($defs, $field) = @_;
+    die "Cannot clear '$field': Field does not exist" unless exists($defs->{data}->{$field});
+
+    if (ref $defs->{data}->{$field} eq 'ARRAY') {
+        $defs->{data}->{$field} = [];
+    } else {
+        $defs->{data}->{$field} = '';
+    }
+    
+    print "Field '$field' cleared\n";
+    $defs;
+}
+
+sub append($$$) {
+    my ($defs, $field, $value) = @_;
+    die "Cannot append to '$field': Field does not exist or is not an array" unless exists($defs->{data}->{$field}) && ref $defs->{data}->{$field} eq 'ARRAY';
+    
+    my @values = grep { length } split /,/, $value; 
+
+    push @{$defs->{data}->{$field}}, @values;
+    print "Appended value(s) '$value' to array '$field'\n";
     $defs;
 }
 
@@ -77,7 +100,7 @@ my $op = shift @ARGV;
 die "Operation not specified" unless $op;
 
 my $field = shift @ARGV;
-die "'$field' is an array. Array ops aren't supported yet" if $field && ref $defs->{data}->{$field} eq 'ARRAY'; 
+die "'$field' is a hash. Hash ops aren't supported yet" if $field && ref $defs->{data}->{$field} eq 'HASH'; 
 
 if ($op eq 'read') { 
     read_from_defs($defs, $field); 
@@ -103,8 +126,19 @@ if ($op eq 'read') {
     $defs = update_field($defs, $field, $value);
     write_card($src, $defs, $dest);
 
+} elsif ($op eq 'clear') {
+    my $dest = shift @ARGV;
+    die "Destination file not specified" unless $dest;
+    $defs = clear($defs, $field);
+    write_card($src, $defs, $dest);
+
+} elsif ($op eq 'append') {
+    my $value = shift @ARGV;
+    my $dest = shift @ARGV;
+    die "Destination file not specified" unless $dest;
+    $defs = append($defs, $field, $value);
+    write_card($src, $defs, $dest);
 } else {
     die "Unknown operation '$op'";
-
 }
 
